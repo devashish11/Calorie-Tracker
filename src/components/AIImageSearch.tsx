@@ -133,7 +133,7 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
           className="w-full border-2 border-dashed border-gray-200 hover:border-emerald-300 rounded-xl py-10 text-center transition-colors group"
         >
           <p className="text-2xl mb-2">📷</p>
-          <p className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">Upload a photo of your meal</p>
+          <p className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">Upload a photo of your meal devashish</p>
           <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP, or GIF</p>
         </button>
       ) : (
