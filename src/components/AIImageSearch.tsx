@@ -122,7 +122,7 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />
