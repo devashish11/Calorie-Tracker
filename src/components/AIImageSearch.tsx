@@ -9,15 +9,31 @@ interface Props {
 
 function Spinner() {
   return (
-    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    <svg
+      className="animate-spin h-5 w-5 text-white"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+      />
     </svg>
   );
 }
 
 export default function AIImageSearch({ onAddNutritionItem }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,6 +43,22 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [adding, setAdding] = useState(false);
   const [done, setDone] = useState(false);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+
+  const isMobile = () => {
+    if (typeof window === "undefined") return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
+  };
+
+  const handleUploadClick = () => {
+    if (isMobile()) {
+      setShowSourceModal(true);
+    } else {
+      galleryInputRef.current?.click();
+    }
+  };
 
   // States for Editing Calories Popup
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -77,7 +109,10 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
     try {
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch("/api/nutrition/image", { method: "POST", body: formData });
+      const res = await fetch("/api/nutrition/image", {
+        method: "POST",
+        body: formData,
+      });
       if (!res.ok) throw new Error("Server error");
       const data: NutritionResponse = await res.json();
       const items = data.items;
@@ -106,7 +141,8 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
     setResults(null);
     setFile(null);
     setPreview(null);
-    if (inputRef.current) inputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   }
 
   function toggleSelect(idx: number) {
@@ -120,26 +156,42 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
   return (
     <div className="space-y-4">
       <input
-        ref={inputRef}
+        ref={galleryInputRef}
         type="file"
         accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         onChange={handleFileChange}
         className="hidden"
       />
 
       {!preview ? (
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={handleUploadClick}
           className="w-full border-2 border-dashed border-gray-200 hover:border-emerald-300 rounded-xl py-10 text-center transition-colors group"
         >
           <p className="text-2xl mb-2">📷</p>
-          <p className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">Upload a photo of your meal devashish</p>
-          <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP, or GIF</p>
+          <p className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">
+            Upload a photo of your meal
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Take a photo or choose from gallery
+          </p>
         </button>
       ) : (
         <div className="relative rounded-xl overflow-hidden border border-gray-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="Meal preview" className="w-full max-h-64 object-cover" />
+          <img
+            src={preview}
+            alt="Meal preview"
+            className="w-full max-h-64 object-cover"
+          />
           {loading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-2">
               <Spinner />
@@ -147,10 +199,8 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
             </div>
           )}
           <button
-            onClick={() => {
-              inputRef.current?.click();
-            }}
-            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white text-xs px-2 py-1 rounded-lg transition-colors"
+            onClick={handleUploadClick}
+            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 font-medium animate-in fade-in duration-200"
           >
             Change
           </button>
@@ -160,12 +210,19 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
       {error && (
         <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-3 text-red-400 hover:text-red-600">✕</button>
+          <button
+            onClick={() => setError(null)}
+            className="ml-3 text-red-400 hover:text-red-600"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       {done && (
-        <p className="text-sm text-emerald-600 font-medium text-center">✓ Items added to your log</p>
+        <p className="text-sm text-emerald-600 font-medium text-center">
+          ✓ Items added to your log
+        </p>
       )}
 
       {preview && !loading && !results && (
@@ -178,7 +235,9 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
       )}
 
       {results && results.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-4">No food detected in this image. Try a clearer photo.</p>
+        <p className="text-sm text-gray-400 text-center py-4">
+          No food detected in this image. Try a clearer photo.
+        </p>
       )}
 
       {results && results.length > 0 && (
@@ -198,8 +257,15 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
                   className="accent-emerald-500 w-4 h-4 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm text-gray-800">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.servingSize} · P {Math.round(item.protein * (quantities[idx] || 1))}g · C {Math.round(item.carbs * (quantities[idx] || 1))}g · F {Math.round(item.fat * (quantities[idx] || 1))}g</p>
+                  <p className="font-medium text-sm text-gray-800">
+                    {item.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {item.servingSize} · P{" "}
+                    {Math.round(item.protein * (quantities[idx] || 1))}g · C{" "}
+                    {Math.round(item.carbs * (quantities[idx] || 1))}g · F{" "}
+                    {Math.round(item.fat * (quantities[idx] || 1))}g
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <input
@@ -228,11 +294,24 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
                   className="p-1.5 hover:bg-gray-200/60 rounded-lg text-gray-400 hover:text-emerald-600 transition-all shrink-0"
                   title="Edit calories"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                    />
                   </svg>
                 </button>
-                <span className="text-sm font-bold text-gray-700 shrink-0 w-20 text-right">{Math.round(item.calories * (quantities[idx] || 1))} kcal</span>
+                <span className="text-sm font-bold text-gray-700 shrink-0 w-20 text-right">
+                  {Math.round(item.calories * (quantities[idx] || 1))} kcal
+                </span>
               </li>
             ))}
           </ul>
@@ -241,21 +320,88 @@ export default function AIImageSearch({ onAddNutritionItem }: Props) {
             disabled={selected.size === 0 || adding}
             className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
           >
-            {adding ? <><Spinner /> Adding…</> : `Add ${selected.size} item${selected.size !== 1 ? "s" : ""} to Log`}
+            {adding ? (
+              <>
+                <Spinner /> Adding…
+              </>
+            ) : (
+              `Add ${selected.size} item${selected.size !== 1 ? "s" : ""} to Log`
+            )}
           </button>
         </>
+      )}
+
+      {/* Photo Source Selection Bottom Sheet/Modal */}
+      {showSourceModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+          onClick={() => setShowSourceModal(false)}
+        >
+          <div
+            className="bg-white w-full rounded-t-2xl sm:rounded-2xl p-6 max-w-sm mx-auto shadow-xl border border-gray-100 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-gray-800 text-center mb-1">
+              Select Photo Source
+            </h3>
+            <p className="text-xs text-gray-500 text-center mb-5">
+              How would you like to add your meal photo?
+            </p>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSourceModal(false);
+                  cameraInputRef.current?.click();
+                }}
+                className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                <span className="text-lg">📷</span> Take Photo
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSourceModal(false);
+                  galleryInputRef.current?.click();
+                }}
+                className="w-full flex items-center justify-center gap-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                <span className="text-lg">🖼️</span> Choose from Gallery
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSourceModal(false)}
+                className="w-full text-center text-xs font-semibold text-gray-400 hover:text-gray-600 py-2 pt-4 border-t border-gray-100 mt-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit Calories Modal */}
       {editingIndex !== null && results && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl border border-gray-100 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-base font-bold text-gray-800 mb-1">Edit Calories</h3>
-            <p className="text-xs text-gray-500 mb-4">Set custom calories for <span className="font-semibold">{results[editingIndex].name}</span></p>
-            
+            <h3 className="text-base font-bold text-gray-800 mb-1">
+              Edit Calories
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Set custom calories for{" "}
+              <span className="font-semibold">
+                {results[editingIndex].name}
+              </span>
+            </p>
+
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Calories (kcal)</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">
+                  Calories (kcal)
+                </label>
                 <input
                   type="number"
                   min="0"
